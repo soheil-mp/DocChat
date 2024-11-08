@@ -5,4 +5,6 @@ export interface Document {
   path: string;
   created_at: string;
   updated_at: string;
+  content?: string | null;
+  vector_ids?: string[] | null;
 } 

@@ -1,8 +1,9 @@
 from langchain.text_splitter import RecursiveCharacterTextSplitter
-from langchain_community.vectorstores import Pinecone
+from langchain_pinecone import Pinecone
 from langchain_openai import OpenAIEmbeddings, ChatOpenAI
 from langchain.chains import ConversationalRetrievalChain
 from typing import List, Dict
+import pinecone
 from pinecone import Pinecone as PineconeClient, ServerlessSpec
 import os
 from ..core.config import settings
@@ -20,7 +21,7 @@ class RAGService:
             openai_api_key=settings.OPENAI_API_KEY
         )
         
-        # Initialize Pinecone
+        # Initialize Pinecone client
         self.pc = PineconeClient(
             api_key=settings.PINECONE_API_KEY,
             environment=settings.PINECONE_ENV
