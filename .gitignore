@@ -1,14 +1,20 @@
-# Environment Variables
+# Environment variables
 .env
-*.env
-.env.*
-!.env.example 
+.env.local
+.env.*.local
 
-# .next
-.next/
-
-# node_modules
-node_modules/
-
-# venv
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+.Python
 venv/
+.env
+
+# Node
+node_modules/
+.npm
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
