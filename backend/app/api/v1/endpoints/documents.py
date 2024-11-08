@@ -1,60 +1,79 @@
-from fastapi import APIRouter, Depends, UploadFile, File, HTTPException, Query
+from fastapi import APIRouter, UploadFile, File, HTTPException
+from fastapi.responses import FileResponse
 from typing import List
-from app.services.document import document_service
-from app.models.document import Document
-from app.api.v1.deps import get_current_user
-from app.models.user import User
+from ....services.rag_service import rag_service
+from ....services.document_service import document_service
 
 router = APIRouter()
 
-@router.post("/upload", response_model=Document)
-async def upload_document(
-    file: UploadFile = File(...),
-    current_user: User = Depends(get_current_user)
-):
+@router.post("/upload")
+async def upload_document(file: UploadFile = File(...)):
     """
-    Upload a new document to the system.
+    Upload and process a document for RAG
     """
     try:
-        document = await document_service.create_document(file, current_user.id)
+        # Store document
+        document = await document_service.store_document(file)
+        
+        # Read content with proper encoding
+        content = await file.read()
+        text_content = content.decode('utf-8', errors='ignore')
+        
+        # Process for RAG
+        await rag_service.process_document(
+            content=text_content,
+            metadata={
+                "id": document["id"],
+                "title": document["title"],
+                "file_path": document["file_path"]
+            }
+        )
+        
+        return {"message": "Document processed successfully", "document": document}
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Error processing document: {str(e)}"
+        )
+
+@router.get("/")
+async def list_documents():
+    """
+    List all available documents
+    """
+    try:
+        documents = await document_service.list_documents()
+        return documents
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@router.get("/{document_id}")
+async def get_document(document_id: str):
+    """
+    Get document by ID
+    """
+    try:
+        document = await document_service.get_document(document_id)
+        if not document:
+            raise HTTPException(status_code=404, detail="Document not found")
         return document
     except Exception as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e))
 
-@router.get("/", response_model=List[Document])
-async def list_documents(
-    skip: int = Query(0, ge=0),
-    limit: int = Query(10, ge=1, le=100),
-    current_user: User = Depends(get_current_user)
-):
+@router.get("/download/{document_id}")
+async def download_document(document_id: str):
     """
-    List all documents for the current user.
+    Download a document
     """
-    documents = await document_service.get_documents(current_user.id, skip, limit)
-    return documents
-
-@router.get("/{document_id}", response_model=Document)
-async def get_document(
-    document_id: str,
-    current_user: User = Depends(get_current_user)
-):
-    """
-    Get a specific document by ID.
-    """
-    document = await document_service.get_document(document_id, current_user.id)
-    if not document:
-        raise HTTPException(status_code=404, detail="Document not found")
-    return document
-
-@router.delete("/{document_id}")
-async def delete_document(
-    document_id: str,
-    current_user: User = Depends(get_current_user)
-):
-    """
-    Delete a specific document by ID.
-    """
-    success = await document_service.delete_document(document_id, current_user.id)
-    if not success:
-        raise HTTPException(status_code=404, detail="Document not found")
-    return {"message": "Document deleted successfully"} 
+    try:
+        document = await document_service.get_document(document_id)
+        if not document:
+            raise HTTPException(status_code=404, detail="Document not found")
+        
+        return FileResponse(
+            document["file_path"],
+            filename=document["title"],
+            media_type=document["file_type"]
+        )
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e)) 

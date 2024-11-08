@@ -1,102 +1,44 @@
-from fastapi import APIRouter, Depends, HTTPException, Query
-from typing import List
-from app.services.chat import chat_service
-from app.models.chat import ChatSession, ChatRequest
+from fastapi import APIRouter, HTTPException
+from typing import List, Optional
+from ....services.rag_service import rag_service
+from ....models.chat import ChatMessage, ChatResponse
+import logging
 
+logger = logging.getLogger(__name__)
 router = APIRouter()
 
-@router.post("/message")
-async def send_message(
-    chat_request: ChatRequest,
-    prompt_template: str = Query("chat_with_docs", description="Name of the prompt template to use"),
-):
+@router.post("/message", response_model=ChatResponse)
+async def chat_message(message: ChatMessage):
     """
-    Send a message and get a response using a specific prompt template
+    Process a chat message using RAG
     """
     try:
-        mock_user_id = "test_user"
-        session = await chat_service.process_message(
-            user_id=mock_user_id,
-            message=chat_request.message,
-            session_id=chat_request.session_id,
-            prompt_template=prompt_template
+        logger.info(f"Received message: {message.content}")
+        
+        # Get response from RAG
+        result = await rag_service.get_response(
+            query=message.content,
+            chat_history=[]  # For now, we're not using chat history
         )
-        return session
-    except ValueError as e:
-        raise HTTPException(status_code=404, detail=str(e))
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-
-@router.post("/documents/{document_id}/summarize")
-async def summarize_document(
-    document_id: str,
-):
-    """
-    Generate a summary of a specific document
-    """
-    try:
-        summary = await chat_service.summarize_document(document_id, "test_user")
-        return {"summary": summary}
-    except ValueError as e:
-        raise HTTPException(status_code=404, detail=str(e))
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-
-@router.post("/documents/compare")
-async def compare_documents(
-    document_ids: List[str],
-    question: str = Query(..., description="Question or aspect to compare"),
-):
-    """
-    Compare multiple documents and analyze their relationships
-    """
-    try:
-        analysis = await chat_service.compare_documents(
-            document_ids,
-            "test_user",
-            question
+        
+        if not result or "answer" not in result:
+            logger.error("Invalid response from RAG service")
+            raise HTTPException(
+                status_code=500,
+                detail="Failed to get valid response from RAG service"
+            )
+            
+        response = ChatResponse(
+            content=result["answer"],
+            sources=result.get("sources", [])
         )
-        return {"analysis": analysis}
-    except ValueError as e:
-        raise HTTPException(status_code=404, detail=str(e))
+        
+        logger.info(f"Sending response: {response}")
+        return response
+        
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-
-@router.get("/sessions", response_model=List[ChatSession])
-async def list_sessions(
-    skip: int = Query(0, ge=0),
-    limit: int = Query(20, ge=1, le=100),
-):
-    """
-    List all chat sessions for the current user
-    """
-    sessions = await chat_service.list_sessions(
-        user_id="test_user",
-        skip=skip,
-        limit=limit
-    )
-    return sessions
-
-@router.get("/sessions/{session_id}", response_model=ChatSession)
-async def get_session(
-    session_id: str,
-):
-    """
-    Get a specific chat session
-    """
-    session = await chat_service.get_session(session_id, "test_user")
-    if not session:
-        raise HTTPException(status_code=404, detail="Chat session not found")
-    return session
-
-@router.delete("/sessions/{session_id}")
-async def delete_session(
-    session_id: str,
-):
-    """
-    Delete a chat session
-    """
-    success = await chat_service.delete_session(session_id, "test_user")
-    if not success:
-        raise HTTPException(status_code=404, detail="Chat session not found")
-    return {"message": "Chat session deleted successfully"} 
+        logger.error(f"Error in chat endpoint: {str(e)}")
+        raise HTTPException(
+            status_code=500,
+            detail="An error occurred while processing your message"
+        )

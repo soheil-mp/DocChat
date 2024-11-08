@@ -1,9 +1,9 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import RedirectResponse
-from app.api.v1.endpoints import chat
-from app.db.mongodb import db  # Import the MongoDB instance
-from app.core.config import settings  # Add this import
+from app.api.v1.endpoints import chat, documents
+from app.db.mongodb import db
+from app.core.config import settings
 
 app = FastAPI(
     title="DocuChat API",
@@ -14,12 +14,12 @@ app = FastAPI(
 @app.on_event("startup")
 async def startup_db_client():
     """Initialize database connection on startup"""
-    await db.connect()
+    await db.connect_to_database()
 
 @app.on_event("shutdown")
 async def shutdown_db_client():
     """Close database connection on shutdown"""
-    await db.close()
+    await db.close_database_connection()
 
 @app.get("/")
 async def root():
@@ -31,11 +31,12 @@ async def root():
 # Update CORS middleware
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=settings.get_cors_origins(),
+    allow_origins=settings.BACKEND_CORS_ORIGINS,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-# Include the chat router
+# Include routers with proper prefixes
 app.include_router(chat.router, prefix="/api/v1/chat", tags=["chat"])
+app.include_router(documents.router, prefix="/api/v1/documents", tags=["documents"])

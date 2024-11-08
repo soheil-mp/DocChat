@@ -1,36 +1,19 @@
 from pydantic import BaseModel, Field
-from typing import List, Optional
+from typing import List, Optional, Dict
 from datetime import datetime
-from enum import Enum
 
-class MessageRole(str, Enum):
-    USER = "user"
-    ASSISTANT = "assistant"
-    SYSTEM = "system"
+class ChatMessage(BaseModel):
+    content: str = Field(..., description="The content of the message")
+    session_id: Optional[str] = Field(None, description="Optional session ID")
 
-class SourceDocument(BaseModel):
-    document_id: str
-    title: str
-    content: str
-    relevance_score: float
-
-class Message(BaseModel):
-    role: MessageRole
-    content: str
-    created_at: datetime = Field(default_factory=datetime.utcnow)
-    sources: Optional[List[SourceDocument]] = None
-
-class ChatSession(BaseModel):
-    id: str
-    user_id: str
-    title: Optional[str] = None
-    messages: List[Message] = Field(default_factory=list)
-    created_at: datetime = Field(default_factory=datetime.utcnow)
-    updated_at: datetime = Field(default_factory=datetime.utcnow)
+class ChatResponse(BaseModel):
+    content: str = Field(..., description="The response content")
+    sources: Optional[List[Dict]] = Field(default=None, description="Optional source documents")
 
     class Config:
-        from_attributes = True
-
-class ChatRequest(BaseModel):
-    message: str
-    session_id: Optional[str] = None 
+        json_schema_extra = {
+            "example": {
+                "content": "This is a response message",
+                "sources": [{"title": "Document 1", "content": "Source content"}]
+            }
+        }

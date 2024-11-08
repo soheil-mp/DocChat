@@ -1,19 +1,38 @@
 import React, { useState, useRef, useEffect } from 'react';
 import axios from '../../lib/axios';
+import { motion, AnimatePresence } from 'framer-motion';
+import { Document } from '../../types/document';
+
+interface Reaction {
+  emoji: string;
+  count: number;
+}
 
 interface Message {
   id: string;
   content: string;
   isUser: boolean;
   sources?: any[];
+  reactions?: Reaction[];
 }
 
-const ChatInterface: React.FC = () => {
-  const [messages, setMessages] = useState<Message[]>([]);
+interface ChatInterfaceProps {}
+
+const ChatInterface: React.FC<ChatInterfaceProps> = () => {
+  const [messages, setMessages] = useState<Message[]>([
+    {
+      id: 'welcome',
+      content: 'Hello! How can I assist you today?',
+      isUser: false,
+      sources: []
+    }
+  ]);
   const [inputMessage, setInputMessage] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [sessionId, setSessionId] = useState<string | null>(null);
   const messagesEndRef = useRef<null | HTMLDivElement>(null);
+  const [documents, setDocuments] = useState<Document[]>([]);
+  const [selectedDocument, setSelectedDocument] = useState<string | null>(null);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -38,40 +57,24 @@ const ChatInterface: React.FC = () => {
 
     try {
       const response = await axios.post('/api/v1/chat/message', { 
-        message: inputMessage,
+        content: inputMessage,
         session_id: sessionId
-      }, {
-        headers: {
-          'Content-Type': 'application/json'
-        }
       });
-
-      if (!sessionId && response.data.id) {
-        setSessionId(response.data.id);
-      }
 
       const aiMessage: Message = {
         id: `ai-${Date.now()}`,
-        content: response.data.messages[response.data.messages.length - 1].content,
+        content: response.data.content,
         isUser: false,
-        sources: response.data.messages[response.data.messages.length - 1].sources || []
+        sources: response.data.sources || []
       };
 
       setMessages(prevMessages => [...prevMessages, aiMessage]);
     } catch (error) {
-      console.error('Full error details:', error);
-      
-      if (axios.isAxiosError(error)) {
-        console.error('Response data:', error.response?.data);
-        console.error('Response status:', error.response?.status);
-        console.error('Response headers:', error.response?.headers);
-      }
+      console.error('Error:', error);
       
       const errorMessage: Message = {
         id: `error-${Date.now()}`,
-        content: axios.isAxiosError(error) 
-          ? error.response?.data?.detail || JSON.stringify(error.response?.data) || 'Sorry, something went wrong.'
-          : 'Sorry, something went wrong.',
+        content: 'Sorry, I encountered an error. Please try again.',
         isUser: false
       };
       setMessages(prevMessages => [...prevMessages, errorMessage]);
@@ -80,62 +83,183 @@ const ChatInterface: React.FC = () => {
     }
   };
 
+  const handleAddReaction = (messageId: string, emoji: string) => {
+    setMessages(messages.map(message => {
+      if (message.id === messageId) {
+        const reactions = message.reactions || [];
+        const existingReaction = reactions.find(r => r.emoji === emoji);
+        
+        if (existingReaction) {
+          return {
+            ...message,
+            reactions: reactions.map(r => 
+              r.emoji === emoji ? { ...r, count: r.count + 1 } : r
+            )
+          };
+        }
+        
+        return {
+          ...message,
+          reactions: [...reactions, { emoji, count: 1 }]
+        };
+      }
+      return message;
+    }));
+  };
+
+  // Fetch documents from the backend
+  useEffect(() => {
+    const fetchDocuments = async () => {
+      try {
+        const response = await fetch('/api/v1/documents');
+        const data = await response.json();
+        setDocuments(data);
+      } catch (error) {
+        console.error('Error fetching documents:', error);
+      }
+    };
+    
+    fetchDocuments();
+  }, []);
+
   return (
-    <div className="flex flex-col h-screen bg-gray-100">
-      <div className="flex-grow overflow-y-auto p-4 space-y-4">
-        {messages.map((message) => (
-          <div 
-            key={message.id} 
-            className={`flex ${message.isUser ? 'justify-end' : 'justify-start'}`}
-          >
-            <div 
-              className={`
-                max-w-[70%] p-3 rounded-lg 
-                ${message.isUser 
-                  ? 'bg-blue-500 text-white' 
-                  : 'bg-white text-gray-800 border'}
-              `}
+    <div className="flex h-[calc(100vh-120px)]">
+      {/* Knowledge Base Sidebar */}
+      <div className="w-80 bg-white border-r border-gray-200 overflow-y-auto">
+        <div className="p-4">
+          <h3 className="text-lg font-semibold text-gray-900">Knowledge Base</h3>
+          <p className="text-sm text-gray-500 mt-1">Available documents</p>
+        </div>
+        
+        <div className="px-3">
+          {documents.map((doc) => (
+            <button
+              key={doc.id}
+              onClick={() => setSelectedDocument(doc.id)}
+              className={`w-full text-left px-3 py-2 rounded-lg text-sm mb-1
+                ${selectedDocument === doc.id 
+                  ? 'bg-[#4169E1] text-white' 
+                  : 'text-gray-700 hover:bg-gray-100'
+                }`}
             >
-              {message.content}
-              {message.sources && message.sources.length > 0 && (
-                <div className="text-xs text-gray-500 mt-2">
-                  Sources:
-                  {message.sources.map((source, index) => (
-                    <div key={index}>
-                      {source.title} (Relevance: {source.relevance_score.toFixed(2)})
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-          </div>
-        ))}
-        {isLoading && (
-          <div className="flex justify-start">
-            <div className="bg-white p-3 rounded-lg">
-              Typing...
-            </div>
-          </div>
-        )}
-        <div ref={messagesEndRef} />
+              <div className="font-medium">{doc.title}</div>
+              <div className="text-xs mt-1 truncate">
+                {selectedDocument === doc.id ? 'Selected' : doc.type}
+              </div>
+            </button>
+          ))}
+        </div>
       </div>
-      
-      <div className="p-4 bg-white border-t flex">
-        <input 
-          type="text" 
-          value={inputMessage}
-          onChange={(e) => setInputMessage(e.target.value)}
-          onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
-          placeholder="Type your message..."
-          className="flex-grow p-2 border rounded-l-lg"
-        />
-        <button 
-          onClick={handleSendMessage}
-          disabled={isLoading}
-          className="bg-blue-500 text-white p-2 rounded-r-lg hover:bg-blue-600 disabled:opacity-50"
+
+      {/* Chat Interface */}
+      <div className="flex-1 flex flex-col">
+        <motion.div 
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5 }}
+          className="relative flex flex-col h-[calc(100vh-120px)] bg-white
+            rounded-[32px] shadow-lg overflow-hidden"
         >
-          Send
-        </button>
+          <div className="absolute inset-0 -z-10 bg-gradient-to-br from-blue-500/20 via-purple-500/20 to-pink-500/20 animate-gradient-shift"></div>
+          <div className="absolute inset-0 -z-10 before:absolute before:inset-0 before:bg-gradient-to-br before:from-blue-500/5 before:via-purple-500/5 before:to-pink-500/5 before:animate-gradient-shift"></div>
+
+          <motion.div 
+            className="relative z-10 px-8 py-6 bg-white"
+          >
+            <h2 className="text-[28px] font-bold text-[#4169E1]">
+              Chat with DocuChat
+            </h2>
+            <div className="flex items-center gap-2 mt-1">
+              <span className="w-2 h-2 bg-green-400 rounded-full"></span>
+              <p className="text-sm text-gray-500">
+                Explore your documents with AI-powered insights ✨
+              </p>
+            </div>
+          </motion.div>
+
+          <div className="relative z-10 flex-grow overflow-y-auto p-6 space-y-6 bg-gradient-to-br from-[#F0F7FF] via-[#F6F0FF] to-[#FFF0F9]">
+            <AnimatePresence>
+              {messages.map((message) => (
+                <motion.div
+                  key={message.id}
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -10 }}
+                  className={`flex items-start gap-3 ${message.isUser ? 'flex-row-reverse' : 'flex-row'}`}
+                >
+                  <div className={`w-8 h-8 rounded-full flex items-center justify-center text-white text-sm font-medium
+                    ${message.isUser ? 'bg-[#FF1493]' : 'bg-[#4169E1]'}`}
+                  >
+                    {message.isUser ? 'You' : 'AI'}
+                  </div>
+                  
+                  <motion.div
+                    className={`
+                      relative max-w-[80%] px-4 py-3 rounded-[16px]
+                      ${message.isUser 
+                        ? 'bg-[#4169E1] text-white' 
+                        : 'bg-white shadow-[0_2px_4px_rgba(0,0,0,0.05)]'}
+                    `}
+                  >
+                    <p className="text-[15px] leading-relaxed">
+                      {message.content}
+                    </p>
+                  </motion.div>
+                </motion.div>
+              ))}
+            </AnimatePresence>
+
+            <AnimatePresence>
+              {isLoading && (
+                <motion.div
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -10 }}
+                  className="flex items-start gap-3"
+                >
+                  <div className="w-8 h-8 rounded-full bg-[#4169E1] flex items-center justify-center text-white text-sm font-medium">
+                    AI
+                  </div>
+                  <div className="px-4 py-2 rounded-full bg-white shadow-[0_2px_4px_rgba(0,0,0,0.05)]">
+                    <div className="flex space-x-2">
+                      {[0, 1, 2].map((i) => (
+                        <div 
+                          key={i}
+                          className="w-2 h-2 bg-[#4169E1] rounded-full animate-bounce"
+                          style={{ animationDelay: `${i * 0.1}s` }}
+                        />
+                      ))}
+                    </div>
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
+
+          <div className="relative z-20 p-4 bg-white">
+            <div className="flex gap-2">
+              <input 
+                type="text"
+                value={inputMessage}
+                onChange={(e) => setInputMessage(e.target.value)}
+                onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
+                placeholder="Type your message..."
+                className="flex-grow px-4 py-3 rounded-full border border-[#4169E1]/30
+                  focus:outline-none focus:ring-2 focus:ring-[#4169E1]/20 focus:border-[#4169E1]
+                  hover:border-[#4169E1]/50 transition-colors text-gray-600 placeholder-gray-400"
+              />
+              <button 
+                onClick={handleSendMessage}
+                disabled={isLoading}
+                className="px-6 py-3 bg-[#4169E1] text-white rounded-full
+                  disabled:opacity-50 disabled:cursor-not-allowed hover:bg-[#4169E1]/90
+                  transition-colors font-medium min-w-[100px]"
+              >
+                Send
+              </button>
+            </div>
+          </div>
+        </motion.div>
       </div>
     </div>
   );

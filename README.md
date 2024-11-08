@@ -150,6 +150,13 @@ The application will be available at [http://localhost:3000](http://localhost:30
 pytest -v
 ```
 
+## Process pdf documents
+
+Process PDF documents inside backend/documents for the RAG process.
+```
+python backend/scripts/process_existing_documents.py
+```
+
 
 ## Development
 
