@@ -19,25 +19,6 @@ const Navbar: React.FC = () => {
             <span className="ml-2 text-2xl">✨</span>
           </motion.div>
         </Link>
-
-        <div className="flex items-center space-x-4">
-          <motion.button
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
-            className="px-4 py-2 rounded-lg text-[#e4e4e7] hover:bg-[#2d2e31] 
-              transition-all duration-200"
-          >
-            Documents
-          </motion.button>
-          <motion.button
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
-            className="px-4 py-2 rounded-lg bg-[#00ffbb] text-[#1a1b1e] 
-              hover:bg-[#00ffbb]/90 transition-all duration-200"
-          >
-            Sign In
-          </motion.button>
-        </div>
       </div>
     </nav>
   );

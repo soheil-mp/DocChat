@@ -35,6 +35,7 @@ PyYAML>=6.0.1
 pinecone-client>=3.0.0
 openai>=1.0.0
 langchain>=0.1.0
+langchain_pinecone
 langchain-community>=0.0.10
 langchain-core>=0.1.10
 langchain-openai>=0.0.5
@@ -45,3 +46,4 @@ langgraph>=0.0.10
 
 #
 aiofiles
+PyPDF2
