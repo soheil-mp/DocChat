@@ -15,7 +15,7 @@
 [![WebSocket](https://img.shields.io/badge/WebSocket-010101?style=flat)](https://developer.mozilla.org/en-US/docs/Web/API/WebSocket)
 
 
-[Demo](#) · [Documentation](docs/) · [Report Bug](issues/) · [Request Feature](issues/)
+[Demo](#) · [Documentation](docs/) · [Report Bug](https://github.com/soheil-mp/DocChat/issues) · [Request Feature]([issues/](https://github.com/soheil-mp/DocChat/issues))
 
 # DocChat 
 > 🤖 An intelligent document Q&A chat interface powered by RAG (Retrieval-Augmented Generation) - transform your documents into interactive knowledge bases.
