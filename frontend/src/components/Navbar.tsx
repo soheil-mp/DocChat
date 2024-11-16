@@ -14,7 +14,7 @@ const Navbar: React.FC = () => {
           >
             <span className="text-2xl font-bold bg-gradient-to-r from-[#00ffbb] to-[#8b5cf6] 
               bg-clip-text text-transparent">
-              DocuChat
+              DocChat
             </span>
             <span className="ml-2 text-2xl">✨</span>
           </motion.div>

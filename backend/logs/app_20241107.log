@@ -1,8 +1,8 @@
-2024-11-07 22:14:32,719 - app.db.mongodb - INFO - Attempting to connect to MongoDB at mongodb://localhost:27017/docuchat (Attempt 1/3)
+2024-11-07 22:14:32,719 - app.db.mongodb - INFO - Attempting to connect to MongoDB at mongodb://localhost:27017/DocChat (Attempt 1/3)
 2024-11-07 22:14:32,744 - app.db.mongodb - INFO - Successfully connected to MongoDB
-2024-11-07 22:14:32,745 - app.db.mongodb - INFO - Using database: docuchat
+2024-11-07 22:14:32,745 - app.db.mongodb - INFO - Using database: DocChat
 2024-11-07 22:14:32,825 - app.db.mongodb - INFO - Database indexes created successfully
-2024-11-07 22:14:32,992 - app.db.mongodb - INFO - Attempting to connect to MongoDB at mongodb://localhost:27017/docuchat (Attempt 1/3)
+2024-11-07 22:14:32,992 - app.db.mongodb - INFO - Attempting to connect to MongoDB at mongodb://localhost:27017/DocChat (Attempt 1/3)
 2024-11-07 22:14:33,015 - app.db.mongodb - INFO - Successfully connected to MongoDB
-2024-11-07 22:14:33,016 - app.db.mongodb - INFO - Using database: docuchat
+2024-11-07 22:14:33,016 - app.db.mongodb - INFO - Using database: DocChat
 2024-11-07 22:14:33,018 - app.db.mongodb - INFO - Database indexes created successfully

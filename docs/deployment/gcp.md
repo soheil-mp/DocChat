@@ -18,24 +18,24 @@
 
 ### 2. GKE Cluster Creation
     # Create GKE cluster
-    gcloud container clusters create docuchat-cluster \
+    gcloud container clusters create DocChat-cluster \
         --num-nodes=3 \
         --machine-type=e2-medium \
         --region=us-central1
 
 ### 3. Cloud Storage Setup
     # Create bucket for documents
-    gsutil mb gs://docuchat-documents
+    gsutil mb gs://DocChat-documents
 
     # Enable versioning
-    gsutil versioning set on gs://docuchat-documents
+    gsutil versioning set on gs://DocChat-documents
 
 ## Application Deployment
 
 ### 1. Build and Push Docker Images
     # Build and push images
-    docker build -t gcr.io/project-id/docuchat-backend -f deploy/docker/Dockerfile.backend .
-    docker push gcr.io/project-id/docuchat-backend
+    docker build -t gcr.io/project-id/DocChat-backend -f deploy/docker/Dockerfile.backend .
+    docker push gcr.io/project-id/DocChat-backend
 
 ### 2. Kubernetes Deployment
 1. Apply configurations

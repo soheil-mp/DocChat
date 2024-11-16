@@ -1,4 +1,4 @@
-import React, { useRef, useMemo } from 'react';
+import React, { useRef, useMemo, useState } from 'react';
 import { motion } from 'framer-motion';
 import axios from '../../../lib/axios';
 import { isAxiosError } from 'axios';
@@ -30,6 +30,8 @@ const KnowledgeBase: React.FC<KnowledgeBaseProps> = ({
   onDocumentsChange
 }) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [isUploading, setIsUploading] = useState(false);
+  const [uploadError, setUploadError] = useState<string | null>(null);
 
   // Memoize document filtering and sorting
   const sortedDocuments = useMemo(() => 
@@ -44,25 +46,25 @@ const KnowledgeBase: React.FC<KnowledgeBaseProps> = ({
     const file = event.target.files?.[0];
     if (!file) return;
 
-    const CHUNK_SIZE = 1024 * 1024; // 1MB chunks
-    const chunks = Math.ceil(file.size / CHUNK_SIZE);
-    
+    setIsUploading(true);
+    setUploadError(null);
+
     try {
-      for (let i = 0; i < chunks; i++) {
-        const chunk = file.slice(
-          i * CHUNK_SIZE,
-          Math.min((i + 1) * CHUNK_SIZE, file.size)
-        );
-        const formData = new FormData();
-        formData.append('file', chunk);
-        formData.append('chunk', String(i));
-        formData.append('chunks', String(chunks));
-        
-        await axios.post('/api/v1/documents/upload/chunk', formData);
-      }
+      const formData = new FormData();
+      formData.append('file', file);
+      
+      await axios.post('/api/v1/documents/upload', formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data'
+        }
+      });
+
       onDocumentsChange?.();
     } catch (error) {
       console.error('Error uploading file:', error);
+      setUploadError('Failed to upload file. Please try again.');
+    } finally {
+      setIsUploading(false);
     }
   };
 
@@ -129,10 +131,12 @@ const KnowledgeBase: React.FC<KnowledgeBaseProps> = ({
           whileHover={{ scale: 1.05 }}
           whileTap={{ scale: 0.95 }}
           onClick={() => fileInputRef.current?.click()}
+          disabled={isUploading}
           className="px-4 py-2 bg-[#00ffbb] text-[#1a1b1e] rounded-lg 
-            hover:bg-[#00ffbb]/90 transition-all duration-200"
+            hover:bg-[#00ffbb]/90 transition-all duration-200
+            disabled:opacity-50 disabled:cursor-not-allowed"
         >
-          Add PDF
+          {isUploading ? 'Uploading...' : 'Add PDF'}
         </motion.button>
         <input
           type="file"
@@ -142,6 +146,12 @@ const KnowledgeBase: React.FC<KnowledgeBaseProps> = ({
           className="hidden"
         />
       </div>
+
+      {uploadError && (
+        <div className="mt-2 text-sm text-red-400">
+          {uploadError}
+        </div>
+      )}
 
       {/* Documents List */}
       <div className="space-y-2">

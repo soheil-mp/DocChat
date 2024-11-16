@@ -10,16 +10,16 @@
 
 ### 1. Azure Container Registry
     # Create resource group
-    az group create --name docuchat-rg --location eastus
+    az group create --name DocChat-rg --location eastus
 
     # Create container registry
-    az acr create --resource-group docuchat-rg \
-        --name docuchatregistry --sku Basic
+    az acr create --resource-group DocChat-rg \
+        --name DocChatregistry --sku Basic
 
 ### 2. AKS Cluster Setup
     # Create AKS cluster
-    az aks create --resource-group docuchat-rg \
-        --name docuchat-cluster \
+    az aks create --resource-group DocChat-rg \
+        --name DocChat-cluster \
         --node-count 3 \
         --enable-addons monitoring
 
@@ -32,11 +32,11 @@
 
 ### 1. Build and Push Docker Images
     # Login to ACR
-    az acr login --name docuchatregistry
+    az acr login --name DocChatregistry
 
     # Build and push images
-    docker build -t docuchatregistry.azurecr.io/docuchat-backend -f deploy/docker/Dockerfile.backend .
-    docker push docuchatregistry.azurecr.io/docuchat-backend
+    docker build -t DocChatregistry.azurecr.io/DocChat-backend -f deploy/docker/Dockerfile.backend .
+    docker push DocChatregistry.azurecr.io/DocChat-backend
 
 ### 2. Deploy to AKS
 1. Apply Kubernetes configurations

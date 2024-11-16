@@ -16,7 +16,7 @@
 
 ### 1. Database Migration
     # Backup existing database
-    mongodump --db docuchat --out ./backup
+    mongodump --db DocChat --out ./backup
 
     # Run migration script
     python scripts/migrate_v1_to_v2.py
@@ -38,7 +38,7 @@
 
 ### Database Rollback
     # Restore v1 database
-    mongorestore --db docuchat ./backup/docuchat
+    mongorestore --db DocChat ./backup/DocChat
 
 ### Application Rollback
 1. Revert to v1 containers

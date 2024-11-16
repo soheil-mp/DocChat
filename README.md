@@ -212,7 +212,7 @@ docker-compose -f deploy/docker/docker-compose.yml logs -f
 1. Backend Environment (.env)
 ```bash
 MONGODB_URL=mongodb://mongodb:27017
-MONGODB_DB_NAME=docuchat
+MONGODB_DB_NAME=DocChat
 OPENAI_API_KEY=your_openai_key
 PINECONE_API_KEY=your_pinecone_key
 PINECONE_ENV=your_pinecone_environment
@@ -292,7 +292,7 @@ docker-compose exec mongodb mongorestore /backup
 2. Document Storage Backups
 ```bash
 # Backup uploads volume
-docker run --rm --volumes-from docuchat_backend_1 -v $(pwd):/backup \
+docker run --rm --volumes-from DocChat_backend_1 -v $(pwd):/backup \
   alpine tar czvf /backup/uploads.tar.gz /app/uploads
 ```
 

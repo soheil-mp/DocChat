@@ -15,7 +15,7 @@ class Settings(BaseSettings):
     
     # MongoDB settings
     MONGODB_URL: str = "mongodb://localhost:27017"
-    MONGODB_DB_NAME: str = "docuchat"
+    MONGODB_DB_NAME: str = "DocChat"
     
     # JWT settings
     JWT_SECRET_KEY: str
@@ -26,7 +26,7 @@ class Settings(BaseSettings):
     OPENAI_API_KEY: str
     PINECONE_API_KEY: str
     PINECONE_ENV: str
-    PINECONE_INDEX_NAME: str = "docuchat"
+    PINECONE_INDEX_NAME: str = "DocChat"
     ANTHROPIC_API_KEY: str | None = None
     COHERE_API_KEY: str | None = None
     

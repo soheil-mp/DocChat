@@ -22,7 +22,7 @@ const Login: React.FC = () => {
   return (
     <div className="min-h-[80vh] flex items-center justify-center">
       <div className="bg-white p-8 rounded-lg shadow-lg max-w-md w-full">
-        <h2 className="text-2xl font-bold text-center mb-6 text-gray-800">Welcome to DocuChat</h2>
+        <h2 className="text-2xl font-bold text-center mb-6 text-gray-800">Welcome to DocChat</h2>
         {error && (
           <div className="mb-4 p-3 bg-red-100 text-red-700 rounded-lg text-sm">
             {error}

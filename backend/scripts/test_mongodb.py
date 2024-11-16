@@ -14,9 +14,9 @@ def test_mongodb_connection():
         logger.info(f"Connected successfully! Available databases: {dbs}")
         
         # Try to access your specific database
-        db = client['docuchat']
+        db = client['DocChat']
         collections = db.list_collection_names()
-        logger.info(f"Collections in docuchat: {collections}")
+        logger.info(f"Collections in DocChat: {collections}")
         
         # Try to count documents
         doc_count = db.documents.count_documents({})

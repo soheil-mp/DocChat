@@ -10,12 +10,12 @@
 
 ### 1. ECR Repository Setup
     # Create ECR repositories for frontend and backend
-    aws ecr create-repository --repository-name docuchat-frontend
-    aws ecr create-repository --repository-name docuchat-backend
+    aws ecr create-repository --repository-name DocChat-frontend
+    aws ecr create-repository --repository-name DocChat-backend
 
 ### 2. ECS Cluster Creation
     # Create ECS cluster
-    aws ecs create-cluster --cluster-name docuchat-cluster
+    aws ecs create-cluster --cluster-name DocChat-cluster
 
 ### 3. MongoDB Atlas Setup
 1. Create MongoDB Atlas cluster
@@ -25,11 +25,11 @@
 
 ### 4. S3 Bucket for Documents
     # Create S3 bucket
-    aws s3 mb s3://docuchat-documents
+    aws s3 mb s3://DocChat-documents
     
     # Enable versioning
     aws s3api put-bucket-versioning \
-        --bucket docuchat-documents \
+        --bucket DocChat-documents \
         --versioning-configuration Status=Enabled
 
 ## Application Deployment
@@ -39,9 +39,9 @@
     aws ecr get-login-password --region region | docker login --username AWS --password-stdin account-id.dkr.ecr.region.amazonaws.com
 
     # Build and push images
-    docker build -t docuchat-backend -f deploy/docker/Dockerfile.backend .
-    docker tag docuchat-backend:latest account-id.dkr.ecr.region.amazonaws.com/docuchat-backend:latest
-    docker push account-id.dkr.ecr.region.amazonaws.com/docuchat-backend:latest
+    docker build -t DocChat-backend -f deploy/docker/Dockerfile.backend .
+    docker tag DocChat-backend:latest account-id.dkr.ecr.region.amazonaws.com/DocChat-backend:latest
+    docker push account-id.dkr.ecr.region.amazonaws.com/DocChat-backend:latest
 
 ### 2. ECS Service Deployment
 1. Create task definitions
@@ -63,8 +63,8 @@
 
 ### CloudWatch Setup
     # Create log groups
-    aws logs create-log-group --log-group-name /ecs/docuchat-backend
-    aws logs create-log-group --log-group-name /ecs/docuchat-frontend
+    aws logs create-log-group --log-group-name /ecs/DocChat-backend
+    aws logs create-log-group --log-group-name /ecs/DocChat-frontend
 
 ### Backup Configuration
 - Configure S3 lifecycle rules

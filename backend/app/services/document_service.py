@@ -23,7 +23,7 @@ class DocumentService:
         """Initialize database connection"""
         if self.collection is None:  # Check collection instead of db
             await db.connect_to_database()
-            database = db.client['docuchat']
+            database = db.client['DocChat']
             self.collection = database['documents']
             logger.info("Initialized database connection and collection")
 
