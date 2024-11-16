@@ -1,43 +1,17 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import RedirectResponse
-from app.api.v1.endpoints import chat, documents
-from app.db.mongodb import db
-from app.core.config import settings
+from app.api.v1.api import api_router
 
-app = FastAPI(
-    title="DocuChat API",
-    description="API for DocuChat - Knowledge Base Chat with RAG",
-    version="1.0.0"
-)
+app = FastAPI()
 
-@app.on_event("startup")
-async def startup_db_client():
-    """Initialize database connection on startup"""
-    await db.connect_to_database()
-
-@app.on_event("shutdown")
-async def shutdown_db_client():
-    """Close database connection on shutdown"""
-    await db.close_database_connection()
-
-@app.get("/")
-async def root():
-    """
-    Root endpoint that redirects to API documentation
-    """
-    return RedirectResponse(url="/docs")
-
-# Update CORS middleware
+# Add CORS middleware
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000"],
+    allow_origins=["http://localhost:3000"],  # Your frontend URL
     allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-    expose_headers=["Content-Disposition"]
+    allow_methods=["*"],  # Allows all methods
+    allow_headers=["*"],  # Allows all headers
 )
 
-# Include routers with proper prefixes
-app.include_router(chat.router, prefix="/api/v1/chat", tags=["chat"])
-app.include_router(documents.router, prefix="/api/v1/documents", tags=["documents"])
+# Include routers
+app.include_router(api_router, prefix="/api/v1")

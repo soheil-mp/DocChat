@@ -55,32 +55,31 @@ class DocumentService:
             )
 
     async def store_document(self, file: UploadFile) -> dict:
-        """Store a document"""
+        """Store a document and return its metadata"""
         try:
             await self.initialize()
-            # Create user directory if it doesn't exist
-            user_dir = os.path.join(self.upload_dir, "default_user")
-            os.makedirs(user_dir, exist_ok=True)
-
-            # Save file
-            file_path = os.path.join(user_dir, file.filename)
+            
+            # Generate safe filename and save file
+            filename = file.filename
+            file_path = self.get_document_path(filename)
+            
+            # Save file content
+            content = await file.read()
             with open(file_path, "wb") as f:
-                content = await file.read()
                 f.write(content)
-
-            # Create document record
+                
+            # Create document metadata
             document = {
-                "title": file.filename,
-                "file_type": file.content_type or "text/plain",
+                "title": filename,
                 "file_path": file_path,
+                "file_type": file.content_type or "application/octet-stream",
                 "created_at": datetime.utcnow(),
-                "updated_at": datetime.utcnow(),
-                "path": file_path  # Add path field to match DocumentResponse model
+                "updated_at": datetime.utcnow()
             }
-
-            # Store in MongoDB using the collection
+            
+            # Store in MongoDB
             result = await self.collection.insert_one(document)
-            document["id"] = str(result.inserted_id)
+            document["id"] = str(result.inserted_id)  # Convert ObjectId to string
             
             logger.info(f"Stored document: {document['title']}")
             return document
@@ -109,5 +108,18 @@ class DocumentService:
     def get_document_path(self, filename: str) -> str:
         """Get full path for a document"""
         return os.path.join(self.upload_dir, filename)
+
+    async def delete_document(self, document_id: str) -> bool:
+        """Delete a document by ID"""
+        try:
+            await self.initialize()  # Make sure we're connected to the database
+            result = await self.collection.delete_one({"_id": ObjectId(document_id)})
+            return result.deleted_count > 0
+        except Exception as e:
+            logger.error(f"Error deleting document: {e}")
+            raise HTTPException(
+                status_code=500,
+                detail=f"Failed to delete document: {str(e)}"
+            )
 
 document_service = DocumentService()

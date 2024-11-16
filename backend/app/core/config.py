@@ -1,7 +1,8 @@
-import os
-from pathlib import Path
-from typing import List, Optional
 from pydantic_settings import BaseSettings
+from pathlib import Path
+from typing import List
+import os
+import json
 
 class Settings(BaseSettings):
     # Base directories
@@ -17,39 +18,33 @@ class Settings(BaseSettings):
     MONGODB_DB_NAME: str = "docuchat"
     
     # JWT settings
-    JWT_SECRET_KEY: str = "your_super_secret_key_here"
+    JWT_SECRET_KEY: str
     JWT_ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
     
-    # OpenAI settings
+    # API Keys and Environment
     OPENAI_API_KEY: str
-    
-    # Pinecone settings
     PINECONE_API_KEY: str
-    PINECONE_ENV: str = "us-east-1"
+    PINECONE_ENV: str
     PINECONE_INDEX_NAME: str = "docuchat"
+    ANTHROPIC_API_KEY: str | None = None
+    COHERE_API_KEY: str | None = None
     
-    # Other LLM Provider settings (optional)
-    ANTHROPIC_API_KEY: Optional[str] = None
-    COHERE_API_KEY: Optional[str] = None
-    
-    # File Upload settings
+    # File Storage
     UPLOAD_DIR: str = "uploads"
     MAX_FILE_SIZE: int = 10 * 1024 * 1024  # 10MB in bytes
     
-    # CORS settings
+    # CORS
     BACKEND_CORS_ORIGINS: List[str] = ["http://localhost:3000"]
 
     class Config:
-        env_file = str(Path(__file__).parent.parent.parent / '.env')  # Absolute path to .env
-        case_sensitive = True
+        env_file = str(Path(__file__).parent.parent.parent / '.env')
         env_file_encoding = 'utf-8'
 
-# Initialize settings with explicit env file path
-env_path = Path(__file__).parent.parent.parent / '.env'
-print(f"Looking for .env file at: {env_path.absolute()}")
-settings = Settings(_env_file=str(env_path))
+        @classmethod
+        def parse_env_var(cls, field_name: str, raw_val: str):
+            if field_name == 'BACKEND_CORS_ORIGINS':
+                return json.loads(raw_val)
+            return raw_val
 
-# Create necessary directories
-os.makedirs(settings.DOCUMENTS_DIR, exist_ok=True)
-os.makedirs(settings.UPLOAD_DIR, exist_ok=True) 
+settings = Settings()

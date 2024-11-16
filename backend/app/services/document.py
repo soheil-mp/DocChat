@@ -96,27 +96,13 @@ class DocumentService:
         doc["id"] = str(doc.pop("_id"))
         return Document(**doc)
 
-    async def delete_document(self, document_id: str, user_id: str) -> bool:
-        # Get document to check if it exists and belongs to user
-        document = await self.get_document(document_id, user_id)
-        if not document:
-            return False
-            
-        # Delete file
-        if os.path.exists(document.file_path):
-            os.remove(document.file_path)
-            
-        # Delete vector embeddings
-        if document.vector_ids:
-            await vector_store_service.delete_vectors(document.vector_ids)
-            
-        # Delete from database
-        result = await self.db.get_db().documents.delete_one({
-            "_id": ObjectId(document_id),
-            "user_id": user_id
-        })
-        
-        return result.deleted_count > 0
+    async def delete_document(self, document_id: str) -> bool:
+        try:
+            result = await self.db.get_db().documents.delete_one({"_id": ObjectId(document_id)})
+            return result.deleted_count > 0
+        except Exception as e:
+            print(f"Error deleting document: {e}")
+            raise
 
     async def process_document(self, document_id: str) -> bool:
         """Process document and create vector embeddings"""

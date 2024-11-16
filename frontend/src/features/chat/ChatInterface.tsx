@@ -1,11 +1,11 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useMemo, useCallback } from 'react';
 import axios from '../../lib/axios';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Document } from '../../types/document';
 import KnowledgeBase from './components/KnowledgeBase';
 import DocumentPreview from './components/DocumentPreview';
-import ParticlesBackground from '../../components/ParticlesBackground';
-import magicPattern from '../../assets/magic-pattern.svg';
+import { useQuery } from '@tanstack/react-query';
+import debounce from 'lodash/debounce';
 
 interface Reaction {
   emoji: string;
@@ -32,22 +32,43 @@ const ChatInterface: React.FC<ChatInterfaceProps> = () => {
     }
   ]);
   const [inputMessage, setInputMessage] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
+  const [isSending, setIsSending] = useState(false);
   const [sessionId] = useState<string | null>(null);
   const messagesEndRef = useRef<null | HTMLDivElement>(null);
-  const [documents, setDocuments] = useState<Document[]>([]);
-  const [isLoadingDocuments, setIsLoadingDocuments] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [selectedDocument, setSelectedDocument] = useState<string | null>(null);
+  const [selectedDocument, setSelectedDocument] = useState<Document | null>(null);
   const [previewDocument, setPreviewDocument] = useState<Document | null>(null);
 
-  const scrollToBottom = () => {
+  // Memoize messages to prevent unnecessary re-renders
+  const memoizedMessages = useMemo(() => messages, [messages]);
+
+  // Optimize scroll behavior with useCallback
+  const scrollToBottom = useCallback(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  };
+  }, []);
+
+  // Debounce input handling
+  const debouncedInputHandler = useMemo(
+    () => debounce((value: string) => setInputMessage(value), 100),
+    []
+  );
+
+  // Optimize document fetching with SWR or React Query
+  const { data: documents, refetch: refreshDocuments, isLoading, error } = useQuery({
+    queryKey: ['documents'],
+    queryFn: async () => {
+      try {
+        const response = await axios.get('/api/v1/documents');
+        return response.data;
+      } catch (err) {
+        console.error('Error fetching documents:', err);
+        throw new Error('Failed to fetch documents');
+      }
+    }
+  });
 
   useEffect(() => {
     scrollToBottom();
-  }, [messages]);
+  }, [memoizedMessages]);
 
   const handleSendMessage = async () => {
     if (!inputMessage.trim()) return;
@@ -60,7 +81,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = () => {
 
     setMessages(prevMessages => [...prevMessages, userMessage]);
     setInputMessage('');
-    setIsLoading(true);
+    setIsSending(true);
 
     try {
       const response = await axios.post('/api/v1/chat/message', { 
@@ -86,36 +107,14 @@ const ChatInterface: React.FC<ChatInterfaceProps> = () => {
       };
       setMessages(prevMessages => [...prevMessages, errorMessage]);
     } finally {
-      setIsLoading(false);
+      setIsSending(false);
     }
   };
-
-  // Fetch documents from the backend
-  useEffect(() => {
-    const fetchDocuments = async () => {
-      try {
-        setIsLoadingDocuments(true);
-        const response = await fetch('http://localhost:8000/api/v1/documents/');
-        if (!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status}`);
-        }
-        const data = await response.json();
-        setDocuments(data);
-      } catch (error) {
-        console.error('Error fetching documents:', error);
-        setError('Failed to load documents');
-      } finally {
-        setIsLoadingDocuments(false);
-      }
-    };
-    
-    fetchDocuments();
-  }, []);
 
   // Update preview document when selection changes
   useEffect(() => {
     if (selectedDocument) {
-      const doc = documents.find(d => d.id === selectedDocument);
+      const doc = documents?.find((d: Document) => d.id === selectedDocument.id);
       setPreviewDocument(doc || null);
     } else {
       setPreviewDocument(null);
@@ -129,69 +128,45 @@ const ChatInterface: React.FC<ChatInterfaceProps> = () => {
 
   return (
     <div className="relative flex h-[calc(100vh-120px)] overflow-hidden p-6 gap-6">
-      {/* Background - Softer, more minimal */}
+      {/* Background */}
       <div className="absolute inset-0 bg-[#1a1b1e] rounded-3xl" />
       
-      {/* Knowledge Base - Gemini style */}
+      {/* Knowledge Base */}
       <KnowledgeBase
-        documents={documents}
+        documents={documents || []}
         selectedDocument={selectedDocument}
-        onSelectDocument={setSelectedDocument}
-        isLoading={isLoadingDocuments}
-        error={error}
+        onSelectDocument={(doc: Document | null) => setSelectedDocument(doc)}
+        isLoading={isLoading}
+        error={error ? (error as Error).message : null}
+        onDocumentsChange={refreshDocuments}
         className="z-10 relative w-[380px] bg-[#2d2e31] 
           rounded-3xl border border-[#404144]" 
       />
 
-      {/* Main Chat Area */}
+      {/* Chat Interface */}
       <motion.div 
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5 }}
-        className="flex-1 flex flex-col relative z-10 max-w-[800px]"
+        className="flex-1 relative bg-[#2d2e31] rounded-3xl border border-[#404144] 
+          overflow-hidden z-10"
       >
-        <div className="rounded-3xl overflow-hidden bg-[#2d2e31] 
-          border border-[#404144] flex flex-col h-[calc(100vh-150px)]">
-          
-          {/* Header - Simplified */}
-          <div className="px-8 py-6 border-b border-[#404144]">
-            <h2 className="text-[32px] font-bold text-white">
-              DocuChat AI
-            </h2>
-            <div className="flex items-center gap-3 mt-2">
-              <div className="w-2 h-2 rounded-full bg-[#00ffbb] animate-pulse" />
-              <p className="text-sm text-[#a1a1aa]">
-                Explore your documents with AI-powered magic ✨
-              </p>
-            </div>
-          </div>
-
-          {/* Messages Area */}
-          <div className="flex-1 overflow-y-auto p-6 space-y-4 
-            scrollbar-thin scrollbar-thumb-[#404144] scrollbar-track-transparent">
-            <div className="max-w-3xl mx-auto">
-              {messages.map((message) => (
+        <div className="h-full flex flex-col">
+          <div className="flex-1 overflow-y-auto p-6">
+            <div className="max-w-3xl mx-auto space-y-6">
+              {memoizedMessages.map((message) => (
                 <motion.div
                   key={message.id}
-                  initial={{ opacity: 0, y: 10 }}
+                  initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
-                  className={`flex items-start gap-3 mb-8 ${message.isUser ? 'flex-row-reverse' : ''}`}
+                  className={`flex ${message.isUser ? 'justify-end' : 'justify-start'}`}
                 >
-                  {/* Avatar - Updated styling */}
-                  <div className={`shrink-0 w-8 h-8 rounded-full flex items-center justify-center text-sm
-                    ${message.isUser 
-                      ? 'bg-[#8e85ff] text-white'
-                      : 'bg-[#00ffbb] text-[#1a1b1e]'}`}
-                  >
-                    {message.isUser ? '👤' : '🤖'}
-                  </div>
-                  
-                  {/* Message Bubble - Refined colors and contrast */}
+                  {/* Message content */}
                   <div className={`
                     relative max-w-[80%] px-5 py-3.5 rounded-2xl
                     ${message.isUser 
                       ? 'bg-[#35363a] ml-auto border border-[#8e85ff]/20'
                       : 'bg-[#35363a]'}
+                    ${isSending && message.id === memoizedMessages[memoizedMessages.length - 1].id 
+                      ? 'opacity-50' 
+                      : 'opacity-100'}
                   `}>
                     <p className="text-[15px] leading-relaxed text-[#e4e4e7]">
                       {message.content}
@@ -215,7 +190,10 @@ const ChatInterface: React.FC<ChatInterfaceProps> = () => {
                               animate={{ opacity: 1, y: 0 }}
                               transition={{ delay: index * 0.1 }}
                               whileHover={{ scale: 1.01 }}
-                              onClick={() => setSelectedDocument(source.document_id)}
+                              onClick={() => {
+                                const doc = documents?.find((d: Document) => d.id === source.document_id);
+                                setSelectedDocument(doc || null);
+                              }}
                               className="group cursor-pointer p-3 rounded-lg 
                                 bg-[#2d2e31] hover:bg-[#404144]
                                 border border-[#404144] hover:border-[#00ffbb]/20
@@ -261,7 +239,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = () => {
             </div>
           </div>
 
-          {/* Input Area - Enhanced hover and focus states */}
+          {/* Input Area */}
           <div className="p-4 border-t border-[#404144]">
             <div className="max-w-3xl mx-auto relative">
               <input 
@@ -269,21 +247,25 @@ const ChatInterface: React.FC<ChatInterfaceProps> = () => {
                 value={inputMessage}
                 onChange={(e) => setInputMessage(e.target.value)}
                 onKeyPress={(e) => e.key === 'Enter' && !e.shiftKey && handleSendMessage()}
-                placeholder="Ask me anything..."
+                placeholder={isSending ? "Sending..." : "Ask me anything..."}
+                disabled={isSending}
                 className="w-full px-5 py-3.5 rounded-2xl 
                   bg-[#35363a] hover:bg-[#404144]
                   border border-[#404144] hover:border-[#00ffbb]/20
                   focus:outline-none focus:border-[#00ffbb]/30 focus:ring-1 focus:ring-[#00ffbb]/20
                   transition-all duration-200
-                  text-[#e4e4e7] placeholder-[#71717a] text-[15px]"
+                  text-[#e4e4e7] placeholder-[#71717a] text-[15px]
+                  disabled:opacity-50 disabled:cursor-not-allowed"
               />
               <motion.button
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
                 onClick={handleSendMessage}
+                disabled={isSending}
                 className="absolute right-3 top-1/2 -translate-y-1/2
                   p-2 rounded-lg text-[#00ffbb] hover:bg-[#00ffbb]/10
-                  transition-all duration-200"
+                  transition-all duration-200
+                  disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 12h14m-7-7l7 7-7 7" />

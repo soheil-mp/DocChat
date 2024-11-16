@@ -1,69 +1,115 @@
-from langchain.text_splitter import RecursiveCharacterTextSplitter
-from langchain_pinecone import Pinecone
-from langchain_openai import OpenAIEmbeddings, ChatOpenAI
+from typing import Dict, List, Optional
+from langchain_openai import OpenAIEmbeddings
+from langchain_community.vectorstores import Pinecone
+from langchain_community.chat_models import ChatOpenAI
 from langchain.chains import ConversationalRetrievalChain
-from typing import List, Dict
-import pinecone
+from langchain_text_splitters import RecursiveCharacterTextSplitter
 from pinecone import Pinecone as PineconeClient, ServerlessSpec
-import os
 from ..core.config import settings
-import time
+import logging
+import os
+
+logger = logging.getLogger(__name__)
 
 class RAGService:
     def __init__(self):
-        # Initialize OpenAI
-        self.embeddings = OpenAIEmbeddings(
-            openai_api_key=settings.OPENAI_API_KEY
-        )
-        self.llm = ChatOpenAI(
-            model_name="gpt-3.5-turbo-16k",
-            temperature=0,
-            openai_api_key=settings.OPENAI_API_KEY
-        )
+        # Verify environment variables
+        if not settings.PINECONE_API_KEY:
+            raise ValueError("PINECONE_API_KEY not found in environment variables")
+        if not settings.PINECONE_ENV:
+            raise ValueError("PINECONE_ENV not found in environment variables")
+        if not settings.PINECONE_INDEX_NAME:
+            raise ValueError("PINECONE_INDEX_NAME not found in environment variables")
+        if not settings.OPENAI_API_KEY:
+            raise ValueError("OPENAI_API_KEY not found in environment variables")
+
+        logger.info("Initializing RAG service with:")
+        logger.info(f"Pinecone Environment: {settings.PINECONE_ENV}")
+        logger.info(f"Pinecone Index: {settings.PINECONE_INDEX_NAME}")
         
-        # Initialize Pinecone client
+        # Initialize Pinecone with new API
+        os.environ["PINECONE_API_KEY"] = settings.PINECONE_API_KEY
+        os.environ["PINECONE_ENVIRONMENT"] = settings.PINECONE_ENV
+        
         self.pc = PineconeClient(
             api_key=settings.PINECONE_API_KEY,
             environment=settings.PINECONE_ENV
         )
         
-        self.index_name = settings.PINECONE_INDEX_NAME
-        
         # Initialize text splitter
         self.text_splitter = RecursiveCharacterTextSplitter(
             chunk_size=1000,
-            chunk_overlap=200,
-            length_function=len,
+            chunk_overlap=200
         )
         
-        try:
-            # Check if index exists
-            indexes = self.pc.list_indexes()
-            if self.index_name not in indexes.names():
-                print(f"Creating new index: {self.index_name}")
-                self.pc.create_index(
-                    name=self.index_name,
-                    dimension=1536,  # OpenAI embeddings dimension
-                    metric='cosine',
-                    spec=ServerlessSpec(
-                        cloud='aws',
-                        region='us-east-1'
-                    )
+        # Initialize embeddings
+        self.embeddings = OpenAIEmbeddings(
+            openai_api_key=settings.OPENAI_API_KEY
+        )
+        
+        # Get or create Pinecone index
+        self.index_name = settings.PINECONE_INDEX_NAME
+        if self.index_name not in self.pc.list_indexes().names():
+            self.pc.create_index(
+                name=self.index_name,
+                dimension=1536,  # OpenAI embeddings dimension
+                metric="cosine",
+                spec=ServerlessSpec(
+                    cloud="aws",
+                    region="us-west-2"
                 )
-                print(f"Successfully created index: {self.index_name}")
-            else:
-                print(f"Using existing index: {self.index_name}")
-            
-            # Initialize vectorstore
-            self.vectorstore = Pinecone(
-                index=self.pc.Index(self.index_name),
-                embedding=self.embeddings,
-                text_key="text"
             )
+        
+        # Initialize vectorstore
+        self.vectorstore = Pinecone.from_existing_index(
+            index_name=self.index_name,
+            embedding=self.embeddings,
+            namespace=""  # Optional: specify a namespace if needed
+        )
+        
+        # Initialize LLM
+        self.llm = ChatOpenAI(
+            temperature=0.7,
+            model_name="gpt-3.5-turbo",
+            openai_api_key=settings.OPENAI_API_KEY
+        )
+        
+        # Initialize RAG chain
+        self.qa_chain = ConversationalRetrievalChain.from_llm(
+            llm=self.llm,
+            retriever=self.vectorstore.as_retriever(
+                search_kwargs={"k": 3}  # Retrieve top 3 most relevant chunks
+            ),
+            return_source_documents=True
+        )
+
+    async def get_response(self, query: str, chat_history: List = []) -> Dict:
+        """Get response using RAG"""
+        try:
+            # Get response from chain
+            result = await self.qa_chain.acall({
+                "question": query,
+                "chat_history": chat_history
+            })
+            
+            # Extract sources from documents
+            sources = []
+            if result.get("source_documents"):
+                for doc in result["source_documents"]:
+                    sources.append({
+                        "title": doc.metadata.get("title", "Unknown"),
+                        "content": doc.page_content,
+                        "document_id": doc.metadata.get("document_id")
+                    })
+            
+            return {
+                "answer": result["answer"],
+                "sources": sources
+            }
             
         except Exception as e:
-            print(f"Error initializing RAG service: {str(e)}")
-            raise e
+            logger.error(f"Error getting RAG response: {str(e)}")
+            raise
 
     async def process_document(self, content: str, metadata: Dict) -> None:
         """Process and store document in vector database"""
@@ -89,48 +135,71 @@ class RAGService:
                 texts=[doc["text"] for doc in documents],
                 metadatas=[doc["metadata"] for doc in documents]
             )
+            
+            # Refresh the retriever
+            self.qa_chain = ConversationalRetrievalChain.from_llm(
+                llm=self.llm,
+                retriever=self.vectorstore.as_retriever(
+                    search_kwargs={"k": 3}
+                ),
+                return_source_documents=True
+            )
+            
             print(f"Successfully processed document: {metadata.get('title', 'Unknown')}")
         except Exception as e:
             print(f"Error processing document: {str(e)}")
             raise e
-    
-    async def get_response(self, query: str, chat_history: List = None) -> Dict:
-        """Get response using RAG"""
-        if chat_history is None:
-            chat_history = []
-            
+
+    async def delete_document_vectors(self, document_id: str) -> None:
+        """Delete all vectors associated with a document"""
         try:
-            # Create retrieval chain with specific search parameters
-            qa_chain = ConversationalRetrievalChain.from_llm(
-                llm=self.llm,
-                retriever=self.vectorstore.as_retriever(
-                    search_type="similarity",
-                    search_kwargs={"k": 3}  # Get top 3 most relevant chunks
-                ),
-                return_source_documents=True,
-                verbose=True  # Add this for debugging
+            # Get the Pinecone index
+            index = self.pc.Index(self.index_name)
+            
+            # For Serverless/Starter indexes, we need to:
+            # 1. Query to get vector IDs associated with the document
+            # 2. Delete vectors by their IDs
+            
+            # Query vectors with matching document_id
+            query_response = index.query(
+                vector=[0] * 1536,  # Dummy vector for metadata-only query
+                filter={
+                    "document_id": document_id
+                },
+                top_k=10000,  # Adjust based on your needs
+                include_metadata=True
             )
             
-            # Get response
-            result = qa_chain({"question": query, "chat_history": chat_history})
-            
-            # Extract and format sources
-            sources = []
-            if "source_documents" in result:
-                for doc in result["source_documents"]:
-                    if hasattr(doc, 'metadata'):
-                        sources.append({
-                            "title": doc.metadata.get("title", "Unknown"),
-                            "content": doc.metadata.get("source", ""),
-                            "document_id": doc.metadata.get("document_id", "")
-                        })
-            
-            return {
-                "answer": result["answer"],
-                "sources": sources
-            }
+            if query_response.matches:
+                # Extract vector IDs
+                vector_ids = [match.id for match in query_response.matches]
+                
+                # Delete vectors by IDs
+                if vector_ids:
+                    index.delete(ids=vector_ids)
+                    
+                logger.info(f"Successfully deleted {len(vector_ids)} vectors for document: {document_id}")
+                
+                # Re-initialize the vectorstore to reflect the changes
+                self.vectorstore = Pinecone.from_existing_index(
+                    index_name=self.index_name,
+                    embedding=self.embeddings,
+                    namespace=""
+                )
+                
+                # Refresh the retriever with the updated vectorstore
+                self.qa_chain = ConversationalRetrievalChain.from_llm(
+                    llm=self.llm,
+                    retriever=self.vectorstore.as_retriever(
+                        search_kwargs={"k": 3}
+                    ),
+                    return_source_documents=True
+                )
+            else:
+                logger.info(f"No vectors found for document: {document_id}")
+                
         except Exception as e:
-            print(f"Error getting response: {str(e)}")
-            raise e
+            logger.error(f"Error deleting vectors: {str(e)}")
+            raise
 
 rag_service = RAGService()

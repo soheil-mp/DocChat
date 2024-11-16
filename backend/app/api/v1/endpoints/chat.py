@@ -40,5 +40,5 @@ async def chat_message(message: ChatMessage):
         logger.error(f"Error in chat endpoint: {str(e)}")
         raise HTTPException(
             status_code=500,
-            detail="An error occurred while processing your message"
+            detail=f"An error occurred while processing your message: {str(e)}"
         )

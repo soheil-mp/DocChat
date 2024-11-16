@@ -9,20 +9,26 @@ from bson import ObjectId
 import os
 import aiofiles
 from datetime import datetime, timezone
+from langchain.text_splitter import RecursiveCharacterTextSplitter
 
 class DocumentProcessor:
     def __init__(self, vector_store: Optional[VectorStoreService] = None):
         self.vector_store = vector_store
         self.chunk_size = 1000
         self.chunk_overlap = 200
+        self._cache = {}
 
     async def get_document(self, document_id: str) -> Optional[Document]:
-        """Get document from database"""
+        """Get document with caching"""
+        if document_id in self._cache:
+            return self._cache[document_id]
+            
         doc = await db.db.documents.find_one({"_id": ObjectId(document_id)})
-        if not doc:
-            return None
-        doc["id"] = str(doc.pop("_id"))
-        return Document(**doc)
+        if doc:
+            doc["id"] = str(doc.pop("_id"))
+            self._cache[document_id] = Document(**doc)
+            return self._cache[document_id]
+        return None
 
     async def update_document_status(self, document_id: str, status: str) -> bool:
         """Update document processing status"""
@@ -96,24 +102,13 @@ class DocumentProcessor:
         return file_path
 
     def split_text(self, text: str) -> List[str]:
-        """Split text into chunks"""
-        # Simple splitting by character count for now
-        chunks = []
-        current_chunk = ""
-        
-        sentences = text.split(". ")
-        
-        for sentence in sentences:
-            if len(current_chunk) + len(sentence) < self.chunk_size:
-                current_chunk += sentence + ". "
-            else:
-                chunks.append(current_chunk.strip())
-                current_chunk = sentence + ". "
-                
-        if current_chunk:
-            chunks.append(current_chunk.strip())
-            
-        return chunks
+        """Optimize text splitting with better chunking"""
+        text_splitter = RecursiveCharacterTextSplitter(
+            chunk_size=self.chunk_size,
+            chunk_overlap=self.chunk_overlap,
+            separators=["\n\n", "\n", ". ", " ", ""]
+        )
+        return text_splitter.split_text(text)
 
     async def read_document_content(self, file_path: str) -> str:
         """Read document content from file"""
