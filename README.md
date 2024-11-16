@@ -167,15 +167,134 @@ DocChat/
 
 ## 📦 Deployment
 
-### Docker
+### Docker Deployment
+
+The application can be deployed using Docker in both development and production environments.
+
+#### Development Environment
+
 ```bash
-docker-compose up --build
+# Start all services with hot-reload
+docker-compose -f deploy/docker/docker-compose.dev.yml up --build
+
+# Start specific services
+docker-compose -f deploy/docker/docker-compose.dev.yml up backend mongodb
+docker-compose -f deploy/docker/docker-compose.dev.yml up frontend
+
+# View logs
+docker-compose -f deploy/docker/docker-compose.dev.yml logs -f
 ```
 
-### Cloud Platforms
-- [AWS Deployment Guide](docs/deployment/aws.md)
-- [GCP Deployment Guide](docs/deployment/gcp.md)
-- [Azure Deployment Guide](docs/deployment/azure.md)
+#### Production Environment
+
+```bash
+# Build and start all services in detached mode
+docker-compose -f deploy/docker/docker-compose.yml up --build -d
+
+# Check service status
+docker-compose -f deploy/docker/docker-compose.yml ps
+
+# Monitor logs
+docker-compose -f deploy/docker/docker-compose.yml logs -f
+```
+
+#### Container Architecture
+
+- **Backend Container**: Python FastAPI application with uvicorn server
+- **Frontend Container**: Nginx serving built React application
+- **MongoDB Container**: Database service with persistent storage
+- **Volumes**: 
+  - `mongodb_data`: Persistent database storage
+  - `uploads`: Document storage for processed files
+
+#### Environment Configuration
+
+1. Backend Environment (.env)
+```bash
+MONGODB_URL=mongodb://mongodb:27017
+MONGODB_DB_NAME=docuchat
+OPENAI_API_KEY=your_openai_key
+PINECONE_API_KEY=your_pinecone_key
+PINECONE_ENV=your_pinecone_environment
+JWT_SECRET_KEY=your_jwt_secret
+```
+
+2. Frontend Environment
+```bash
+REACT_APP_API_URL=http://localhost:8000
+REACT_APP_WS_URL=ws://localhost:8000/ws
+```
+
+#### Health Monitoring
+
+The deployment includes health checks for all services:
+- Backend: HTTP health endpoint at `/health`
+- Frontend: Nginx status page
+- MongoDB: Connection check
+
+#### Scaling Considerations
+
+- Backend can be scaled horizontally using Docker Swarm or Kubernetes
+- MongoDB should be configured with replication for production
+- Consider using managed services for databases in production
+
+### Cloud Platform Deployment
+
+#### AWS Deployment
+- EC2 instances for application containers
+- ECS/EKS for container orchestration
+- MongoDB Atlas for database
+- S3 for document storage
+- CloudFront for CDN
+- Route53 for DNS management
+
+[Detailed AWS Setup Guide](docs/deployment/aws.md)
+
+#### Google Cloud Platform
+- Google Compute Engine for containers
+- Google Kubernetes Engine for orchestration
+- Cloud Storage for documents
+- Cloud CDN for content delivery
+- Cloud DNS for domain management
+
+[Detailed GCP Setup Guide](docs/deployment/gcp.md)
+
+#### Microsoft Azure
+- Azure Container Instances
+- AKS for Kubernetes deployment
+- Azure Cosmos DB with MongoDB API
+- Azure Blob Storage for documents
+- Azure CDN for content delivery
+
+[Detailed Azure Setup Guide](docs/deployment/azure.md)
+
+### Security Considerations
+
+- All containers run as non-root users
+- Environment variables for sensitive data
+- Regular security updates for base images
+- Network isolation between services
+- Rate limiting on API endpoints
+- CORS configuration
+- SSL/TLS encryption
+
+### Backup Strategy
+
+1. Database Backups
+```bash
+# Manual MongoDB backup
+docker-compose exec mongodb mongodump --out /backup
+
+# Restore from backup
+docker-compose exec mongodb mongorestore /backup
+```
+
+2. Document Storage Backups
+```bash
+# Backup uploads volume
+docker run --rm --volumes-from docuchat_backend_1 -v $(pwd):/backup \
+  alpine tar czvf /backup/uploads.tar.gz /app/uploads
+```
 
 ## 🔒 Security
 
