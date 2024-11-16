@@ -1,9 +1,3 @@
-# DocChat 
-> 🤖 An intelligent document Q&A chat interface powered by RAG (Retrieval-Augmented Generation) - transform your documents into interactive knowledge bases.
-
-<div align="center">
-
-![DocChat Demo](docs/assets/demo.png)
 
 [![CC0 License](https://img.shields.io/badge/License-CC0%201.0-lightgrey.svg)](http://creativecommons.org/publicdomain/zero/1.0/)
 [![FastAPI](https://img.shields.io/badge/FastAPI-005571?style=flat&logo=fastapi)](https://fastapi.tiangolo.com/)
@@ -22,6 +16,13 @@
 
 
 [Demo](#) · [Documentation](docs/) · [Report Bug](issues/) · [Request Feature](issues/)
+
+# DocChat 
+> 🤖 An intelligent document Q&A chat interface powered by RAG (Retrieval-Augmented Generation) - transform your documents into interactive knowledge bases.
+
+<div align="center">
+
+![DocChat Demo](docs/assets/demo.png)
 
 </div>
 
