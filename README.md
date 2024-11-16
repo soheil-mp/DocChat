@@ -1,80 +1,44 @@
-# DocuChat - Knowledge Base Chat with RAG
+# DocuChat 
+> 🤖 An intelligent document chat interface powered by RAG (Retrieval-Augmented Generation)
 
-## Overview
-DocuChat is a single-page application that lets users upload documents to a knowledge base and interact with the uploaded content via a conversational AI. The project leverages Retrieval-Augmented Generation (RAG) to provide accurate, document-grounded responses.
+<div align="center">
 
-## Project Structure
+![DocuChat Demo](docs/assets/demo.png)
+*Add a screenshot of your application here*
 
-```
-docuchat/
-├── backend/
-│   ├── app/
-│   │   ├── api/
-│   │   │   └── v1/          # API endpoints (auth, chat, docs)
-│   │   ├── core/            # Core utilities and config
-│   │   ├── db/              # Database and repositories
-│   │   ├── models/          # Domain models and schemas
-│   │   └── services/        # Business logic services
-│   └── tests/               # Backend tests
-│
-├── frontend/
-│   ├── src/
-│   │   ├── assets/          # Static assets
-│   │   ├── components/      # Reusable UI components
-│   │   ├── features/        # Feature modules
-│   │   │   ├── auth/
-│   │   │   ├── chat/
-│   │   │   └── documents/
-│   │   ├── lib/            # Third-party integrations
-│   │   ├── store/          # State management
-│   │   └── types/          # TypeScript types
-│   └── tests/              # Frontend tests
-│
-├── deploy/                  # Deployment configurations
-│   ├── docker/
-│   └── k8s/
-│
-└── docs/                   # Documentation
-    ├── api/
-    ├── architecture/
-    └── guides/
-```
+[![MIT License](https://img.shields.io/badge/License-MIT-green.svg)](https://choosealicense.com/licenses/mit/)
+[![FastAPI](https://img.shields.io/badge/FastAPI-005571?style=flat&logo=fastapi)](https://fastapi.tiangolo.com/)
+[![React](https://img.shields.io/badge/React-20232A?style=flat&logo=react&logoColor=61DAFB)](https://reactjs.org/)
+[![TypeScript](https://img.shields.io/badge/TypeScript-007ACC?style=flat&logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
 
-## Key Features
-- 📄 **Document Management**
-  - Support for multiple file formats (PDF, DOCX, TXT)
-  - Batch upload capabilities
-  - Document versioning and metadata tracking
-  
-- 💬 **Intelligent Chat Interface**
-  - Context-aware conversations using RAG
-  - Source attribution for responses
-  - Chat history management
-  - Real-time typing indicators
-  
-- ⚙️ **Advanced Configuration**
-  - Model selection (OpenAI, Anthropic, Cohere)
-  - Fine-tuning of generation parameters
-  - Custom prompt templates
-  - Response formatting options
+[Demo](https://demo-link) · [Documentation](docs/) · [Report Bug](issues/) · [Request Feature](issues/)
 
-## Tech Stack
-### Frontend
-- **Core**: TypeScript, React 18
-- **Styling**: TailwindCSS, HeadlessUI
-- **State Management**: React Query, Zustand
-- **Testing**: Jest, React Testing Library
+</div>
 
-### Backend
-- **Framework**: FastAPI
-- **AI/ML**: LangChain, LangGraph
-- **Database**: MongoDB (documents), Pinecone (vectors)
-- **LLM Integration**: OpenAI GPT-4
+## ✨ Features
 
-## Getting Started
+- 📄 **Smart Document Management**
+  - Multi-format support (PDF, DOCX, TXT)
+  - Batch uploads with progress tracking
+  - Version control & metadata management
+
+- 💬 **AI-Powered Chat**
+  - Context-aware responses using RAG
+  - Real-time interactions
+  - Source citations
+  - Conversation history
+
+- ⚙️ **Customization**
+  - Multiple LLM providers (OpenAI, Anthropic, Cohere)
+  - Adjustable generation parameters
+  - Custom prompting
+  - Flexible output formatting
+
+## 🚀 Quick Start
 
 ### Prerequisites
-- Node.js and npm
+
+- Node.js 16+
 - Python 3.8+
 - MongoDB
 - Pinecone account
@@ -82,145 +46,134 @@ docuchat/
 
 ### Installation
 
-#### 1. Clone the Repository
+1. **Clone the repository**
 ```bash
 git clone https://github.com/yourusername/docuchat.git
 cd docuchat
 ```
 
-#### 2. Backend Setup
+2. **Set up the backend**
 ```bash
-# Navigate to backend directory
 cd backend
-
-# Create and activate virtual environment
 python -m venv venv
-source venv/bin/activate  # On Windows: .\venv\Scripts\activate
-
-# Install dependencies
+source venv/bin/activate  # Windows: .\venv\Scripts\activate
 pip install -r requirements.txt
-
-# Setup environment variables
-cp .env.example .env
-# Edit .env with your credentials
+cp .env.example .env     # Configure your environment variables
 ```
 
-#### 3. Frontend Setup
+3. **Set up the frontend**
 ```bash
-# Navigate to frontend directory
 cd frontend
-
-# Install dependencies
 npm install
-
-# Add TypeScript and necessary types
-npm install --save-dev typescript @types/react @types/react-dom
-
-#
-# npm install react-router-dom axios zustand
-# npm install --save-dev @types/react-router-dom
-
-# Setup environment variables
-cp .env.example .env
-# Edit .env with your settings
-
-# Initialize TypeScript configuration
-npx tsc --init
+cp .env.example .env     # Configure your environment variables
 ```
 
-### Running the Application
+### Running Locally
 
-#### 1. Start the Backend
+1. **Start the backend server**
 ```bash
 cd backend
 uvicorn app.main:app --reload
 ```
-The API will be available at [http://localhost:8000](http://localhost:8000)
 
-#### 2. Start the Frontend
+2. **Launch the frontend**
 ```bash
 cd frontend
 npm start
 ```
-The application will be available at [http://localhost:3000](http://localhost:3000)
 
-## Unit Testing 
+Visit [http://localhost:3000](http://localhost:3000) to see the application.
 
+## 🏗️ Architecture
+
+```mermaid
+graph TD
+    A[Client] -->|HTTP/WebSocket| B[FastAPI Backend]
+    B -->|Document Storage| C[MongoDB]
+    B -->|Vector Storage| D[Pinecone]
+    B -->|RAG Pipeline| E[LangChain]
+    E -->|LLM Requests| F[OpenAI]
+```
+
+## 📁 Project Structure
+
+<details>
+<summary>Click to expand</summary>
+
+```
+docuchat/
+├── backend/              # FastAPI server
+│   ├── app/
+│   │   ├── api/         # REST endpoints
+│   │   ├── core/        # Core utilities
+│   │   ├── services/    # Business logic
+│   │   └── models/      # Data models
+│   └── tests/           # Backend tests
+├── frontend/            # React application
+│   ├── src/
+│   │   ├── components/  # UI components
+│   │   ├── features/    # Feature modules
+│   │   └── lib/        # Utilities
+│   └── tests/          # Frontend tests
+└── docs/               # Documentation
+```
+
+</details>
+
+## 🛠️ Tech Stack
+
+<details>
+<summary>Click to expand</summary>
+
+### Frontend
+- React 18 with TypeScript
+- TailwindCSS & HeadlessUI
+- React Query & Zustand
+- Jest & Testing Library
+
+### Backend
+- FastAPI
+- LangChain & LangGraph
+- MongoDB & Pinecone
+- OpenAI GPT-4
+
+</details>
+
+## 📦 Deployment
+
+### Docker
 ```bash
-pytest -v
-```
-
-## Process pdf documents
-
-Process PDF documents inside backend/documents for the RAG process.
-```
-python backend/scripts/process_existing_documents.py
-```
-
-
-## Development
-
-### Architecture
-```
-┌────────────┐     ┌────────────┐     ┌────────────┐
-│   Client   │────▶│   FastAPI  │────▶│  MongoDB   │
-└────────────┘     └────────────┘     └────────────┘
-                         │
-                         ▼
-                  ┌────────────┐     ┌────────────┐
-                  │ LangChain  │────▶│  Pinecone  │
-                  └────────────┘     └────────────┘
-                         │
-                         ▼
-                  ┌────────────┐
-                  │   OpenAI   │
-                  └────────────┘
-```
-
-### API Documentation
-Full API documentation is available at `/docs` when running the backend server.
-
-### Testing
-```bash
-# Backend tests
-cd backend
-pytest
-
-# Frontend tests
-cd frontend
-npm test
-```
-
-## Deployment
-
-### Docker Support
-```bash
-# Build and run with Docker Compose
 docker-compose up --build
 ```
 
-### Cloud Deployment
-Deployment guides available for:
-- AWS (ECS, EKS)
-- Google Cloud (GKE)
-- Azure (AKS)
-- Digital Ocean
+### Cloud Platforms
+- [AWS Deployment Guide](docs/deployment/aws.md)
+- [GCP Deployment Guide](docs/deployment/gcp.md)
+- [Azure Deployment Guide](docs/deployment/azure.md)
 
-## Monitoring
-- Application metrics via Prometheus/Grafana
-- Error tracking with Sentry
-- Custom analytics dashboard
+## 🔒 Security
 
-## Security Considerations
-- JWT authentication
+- JWT-based authentication
 - Rate limiting
-- Input sanitization
-- CORS configuration
-- Regular dependency audits
+- Input validation
+- CORS protection
+- Regular security audits
 
-## Contributing
-Contributions are welcome! Please feel free to submit a Pull Request. For major changes, please open an issue first to discuss what you would like to change.
+## 🤝 Contributing
 
-## License
-This project is licensed under the MIT License - see the LICENSE file for details
+1. Fork the repository
+2. Create your feature branch (`git checkout -b feature/AmazingFeature`)
+3. Commit changes (`git commit -m 'Add AmazingFeature'`)
+4. Push to branch (`git push origin feature/AmazingFeature`)
+5. Open a Pull Request
+
+## 📝 License
+
+Distributed under the MIT License. See `LICENSE` for more information.
+
+## 📧 Contact
+
+Your Name - [@yourtwitter](https://twitter.com/yourtwitter) - email@example.com
+
+Project Link: [https://github.com/yourusername/docuchat](https://github.com/yourusername/docuchat)
 
