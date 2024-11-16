@@ -1,19 +1,44 @@
-# DocuChat 
-> 🤖 An intelligent document chat interface powered by RAG (Retrieval-Augmented Generation)
+# DocChat 
+> 🤖 An intelligent document Q&A chat interface powered by RAG (Retrieval-Augmented Generation) - transform your documents into interactive knowledge bases.
 
 <div align="center">
 
-![DocuChat Demo](docs/assets/demo.png)
-*Add a screenshot of your application here*
+![DocChat Demo](docs/assets/demo.png)
 
-[![MIT License](https://img.shields.io/badge/License-MIT-green.svg)](https://choosealicense.com/licenses/mit/)
+[![CC0 License](https://img.shields.io/badge/License-CC0%201.0-lightgrey.svg)](http://creativecommons.org/publicdomain/zero/1.0/)
 [![FastAPI](https://img.shields.io/badge/FastAPI-005571?style=flat&logo=fastapi)](https://fastapi.tiangolo.com/)
 [![React](https://img.shields.io/badge/React-20232A?style=flat&logo=react&logoColor=61DAFB)](https://reactjs.org/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-007ACC?style=flat&logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
+[![Python](https://img.shields.io/badge/Python-3776AB?style=flat&logo=python&logoColor=white)](https://www.python.org/)
+[![MongoDB](https://img.shields.io/badge/MongoDB-47A248?style=flat&logo=mongodb&logoColor=white)](https://www.mongodb.com/)
+[![Pinecone](https://img.shields.io/badge/Pinecone-000000?style=flat)](https://www.pinecone.io/)
+[![OpenAI](https://img.shields.io/badge/OpenAI-412991?style=flat&logo=openai&logoColor=white)](https://openai.com/)
+[![LangChain](https://img.shields.io/badge/🦜%20LangChain-000000?style=flat)](https://langchain.com/)
+[![Docker](https://img.shields.io/badge/Docker-2496ED?style=flat&logo=docker&logoColor=white)](https://www.docker.com/)
+[![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-38B2AC?style=flat&logo=tailwind-css&logoColor=white)](https://tailwindcss.com/)
+[![Node.js](https://img.shields.io/badge/Node.js-339933?style=flat&logo=nodedotjs&logoColor=white)](https://nodejs.org/)
+[![Jest](https://img.shields.io/badge/Jest-C21325?style=flat&logo=jest&logoColor=white)](https://jestjs.io/)
+[![WebSocket](https://img.shields.io/badge/WebSocket-010101?style=flat)](https://developer.mozilla.org/en-US/docs/Web/API/WebSocket)
 
-[Demo](https://demo-link) · [Documentation](docs/) · [Report Bug](issues/) · [Request Feature](issues/)
+
+[Demo](#) · [Documentation](docs/) · [Report Bug](issues/) · [Request Feature](issues/)
 
 </div>
+
+## 📋 Table of Contents
+- [Features](#-features)
+- [Quick Start](#-quick-start)
+- [Architecture](#️-architecture)
+- [Project Structure](#-project-structure)
+- [Tech Stack](#️-tech-stack)
+- [API Documentation](#-api-documentation)
+- [Configuration](#-configuration)
+- [Deployment](#-deployment)
+- [Security](#-security)
+- [Contributing](#-contributing)
+- [Troubleshooting](#-troubleshooting)
+- [License](#-license)
+- [Contact](#-contact)
 
 ## ✨ Features
 
@@ -48,8 +73,8 @@
 
 1. **Clone the repository**
 ```bash
-git clone https://github.com/yourusername/docuchat.git
-cd docuchat
+git clone https://github.com/yourusername/DocChat.git
+cd DocChat
 ```
 
 2. **Set up the backend**
@@ -101,7 +126,7 @@ graph TD
 <summary>Click to expand</summary>
 
 ```
-docuchat/
+DocChat/
 ├── backend/              # FastAPI server
 │   ├── app/
 │   │   ├── api/         # REST endpoints
@@ -175,5 +200,113 @@ Distributed under the MIT License. See `LICENSE` for more information.
 
 Your Name - [@yourtwitter](https://twitter.com/yourtwitter) - email@example.com
 
-Project Link: [https://github.com/yourusername/docuchat](https://github.com/yourusername/docuchat)
+Project Link: [https://github.com/yourusername/DocChat](https://github.com/yourusername/DocChat)
+
+## 🔧 Development
+
+### Code Style
+
+```bash
+# Backend
+pip install black isort flake8
+black .
+isort .
+flake8
+
+# Frontend
+npm run lint
+npm run format
+```
+
+### Testing
+
+```bash
+# Backend
+pytest
+pytest --cov=app tests/
+
+# Frontend
+npm run test
+npm run test:coverage
+```
+
+## 🐳 Docker Support
+
+### Development
+```bash
+# Development with hot-reload
+docker-compose -f docker-compose.dev.yml up
+
+# Production build
+docker-compose -f docker-compose.prod.yml up
+```
+
+### Production
+```bash
+# Build images
+docker build -t DocChat-backend -f backend/Dockerfile.prod backend/
+docker build -t DocChat-frontend -f frontend/Dockerfile.prod frontend/
+
+# Run containers
+docker-compose -f docker-compose.prod.yml up -d
+```
+
+## 🔍 Troubleshooting
+
+<details>
+<summary>Common Issues</summary>
+
+### Backend Issues
+1. **MongoDB Connection Errors**
+   ```bash
+   # Check MongoDB status
+   mongosh
+   # Verify connection string in .env
+   ```
+
+2. **Pinecone API Issues**
+   - Verify API key and environment
+   - Check index name and dimension
+
+### Frontend Issues
+1. **WebSocket Connection Failed**
+   - Verify backend is running
+   - Check CORS settings
+   - Confirm WebSocket URL
+
+2. **Build Failures**
+   ```bash
+   # Clear node modules and reinstall
+   rm -rf node_modules
+   npm install
+   ```
+
+</details>
+
+## 📈 Performance
+
+### Optimizations
+- Document chunking strategy
+- Vector store indexing
+- Response streaming
+- Frontend caching
+- API rate limiting
+
+### Monitoring
+- Prometheus metrics
+- Grafana dashboards
+- Error tracking
+- Usage analytics
+
+## 🔄 Updates & Migration
+
+### Version History
+- v1.0.0 - Initial release
+- v1.1.0 - Added streaming support
+- v1.2.0 - Multiple document handling
+- v2.0.0 - New UI and improved RAG
+
+### Migration Guides
+- [v1.x to v2.x Migration](docs/migration/v1-to-v2.md)
+- [Database Schema Updates](docs/migration/database.md)
 
